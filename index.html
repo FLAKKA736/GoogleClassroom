@@ -95,8 +95,10 @@ const colors = [
 
       ramData.push(data);
     }
-              cpuLoop();
-              animate();
+              setTimeout(() => {
+      startCPU();
+      startRAM();
+    }, 3000);
             <\/script>
           </body>
           </html>
