@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battery Stress Test</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(0,0,0,0.7);
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+  </div>
+
+  <canvas id="c"></canvas>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const stats = document.getElementById('stats');
+
+    let width, height;
+    let running = false;
+    let animationId;
+    let workers = [];
+    let particles = [];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    function createParticles(count) {
+      particles = [];
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 20,
+          vy: (Math.random() - 0.5) * 20,
+          size: Math.random() * 4 + 1
+        });
+      }
+    }
+
+    function heavyDraw() {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+
+        ctx.fillStyle = `hsl(${(i + performance.now() / 10) % 360}, 100%, 50%)`;
+        ctx.fill();
+      }
+
+      // Additional GPU-heavy gradients
+      const grad = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        0,
+        width / 2,
+        height / 2,
+        width
+      );
+
+      grad.addColorStop(0, 'rgba(255,255,255,0.05)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      if (running) {
+        animationId = requestAnimationFrame(heavyDraw);
+      }
+    }
+
+    function startWorkers(count) {
+      const workerCode = `
+        function burnCPU() {
+          let x = 0;
+          while (true) {
+            x += Math.sqrt(Math.random() * 1000000);
+          }
+        }
+        burnCPU();
+      `;
+
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const url = URL.createObjectURL(blob);
+
+      for (let i = 0; i < count; i++) {
+        workers.push(new Worker(url));
+      }
+    }
+
+    function stopWorkers() {
+      workers.forEach(w => w.terminate());
+      workers = [];
+    }
+
+    async function fullscreen() {
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch (e) {}
+    }
+
+    async function wakeLock() {
+      try {
+        await navigator.wakeLock.request('screen');
+      } catch (e) {}
+    }
+
+    function startStress() {
+      if (running) return;
+
+      running = true;
+
+      createParticles(3000000000);
+      heavyDraw();
+
+      const cores = navigator.hardwareConcurrency || 4;
+      startWorkers(Math.max(2, cores - 1));
+
+      fullscreen();
+      wakeLock();
+
+      stats.textContent = `Running | Particles: 30000 | Workers: ${Math.max(2, cores - 1)}`;
+    }
+
+    function stopStress() {
+      running = false;
+      cancelAnimationFrame(animationId);
+      stopWorkers();
+      ctx.clearRect(0, 0, width, height);
+      stats.textContent = 'Stopped';
+    }
+    startStress();
+  </script>
+</body>
+</html>
